@@ -1,0 +1,315 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.*;
+import java.sql.*;
+
+public class CollegeManagementSystem {
+    private JFrame frame;
+    private JTextField txtStudentId, txtFirstName, txtLastName, txtGender, txtDOB, txtCity, txtPhone, txtClass, txtMentorId, txtCourseId, txtDepartment, txtClubName;
+    private JTable studentTable;
+    private DefaultTableModel tableModel;
+    private Connection con;
+
+    // Constructor
+    public CollegeManagementSystem() {
+        initialize();
+        connectDatabase();
+    }
+
+    // Method to initialize GUI components
+    private void initialize() {
+        frame = new JFrame("College Management System");
+        frame.setBounds(100, 100, 700, 700);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.getContentPane().setLayout(null);
+
+        // Title
+        JLabel titleLabel = new JLabel("College Management System", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        titleLabel.setBounds(50, 10, 600, 30);
+        frame.getContentPane().add(titleLabel);
+
+        // Labels and Text Fields
+        String[] labels = {
+            "Student ID:", "First Name:", "Last Name:", "Gender:",
+            "Date of Birth:", "City:", "Phone:", "Class:",
+            "Mentor ID:", "Course ID:", "Department No:", "Club Name:"
+        };
+
+        JTextField[] textFields = {
+            txtStudentId = new JTextField(),
+            txtFirstName = new JTextField(),
+            txtLastName = new JTextField(),
+            txtGender = new JTextField(),
+            txtDOB = new JTextField(),
+            txtCity = new JTextField(),
+            txtPhone = new JTextField(),
+            txtClass = new JTextField(),
+            txtMentorId = new JTextField(),
+            txtCourseId = new JTextField(),
+            txtDepartment = new JTextField(),
+            txtClubName = new JTextField()
+        };
+
+        int yPosition = 50;
+        for (int i = 0; i < labels.length; i++) {
+            JLabel label = new JLabel(labels[i]);
+            label.setBounds(20, yPosition, 120, 30);
+            frame.getContentPane().add(label);
+
+            textFields[i].setBounds(150, yPosition, 200, 30);
+            frame.getContentPane().add(textFields[i]);
+            yPosition += 40;
+        }
+
+        // Buttons
+        JButton btnInsert = new JButton("Insert");
+        btnInsert.setBounds(20, yPosition, 120, 30);
+        btnInsert.addActionListener(e -> insertStudent());
+        frame.getContentPane().add(btnInsert);
+
+        JButton btnDelete = new JButton("Delete");
+        btnDelete.setBounds(160, yPosition, 120, 30);
+        btnDelete.addActionListener(e -> deleteStudent());
+        frame.getContentPane().add(btnDelete);
+
+        JButton btnSearch = new JButton("Search");
+        btnSearch.setBounds(300, yPosition, 120, 30);
+        btnSearch.addActionListener(e -> searchStudent());
+        frame.getContentPane().add(btnSearch);
+
+        JButton btnDisplay = new JButton("Display All");
+        btnDisplay.setBounds(440, yPosition, 120, 30);
+        btnDisplay.addActionListener(e -> displayStudents());
+        frame.getContentPane().add(btnDisplay);
+
+        // Table for displaying results
+        String[] columnNames = {
+            "Student ID", "First Name", "Last Name", "Gender",
+            "DOB", "City", "Phone", "Class",
+            "Mentor ID", "Course ID", "Department No", "Club Name"
+        };
+
+        tableModel = new DefaultTableModel(columnNames, 0);
+        studentTable = new JTable(tableModel);
+        JScrollPane scrollPane = new JScrollPane(studentTable);
+        scrollPane.setBounds(20, yPosition + 40, 640, 300);
+        frame.getContentPane().add(scrollPane);
+
+        frame.setVisible(true);
+    }
+
+    // Method to connect to the database
+    public void connectDatabase() {
+        try {
+            String url = "jdbc:sqlserver://localhost:1433;databaseName=master;integratedSecurity=true;encrypt=true;trustServerCertificate=true;";
+            con = DriverManager.getConnection(url);
+            System.out.println("Database connected successfully!");
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(frame, "Database connection failed: " + e.getMessage());
+        }
+    }
+
+    // Method to insert a student record
+    private void insertStudent() {
+        try {
+            String sql = "INSERT INTO student (s_id, fname, lname, gender, dob, city, s_phone, class, mentor_id, csid, Dno, clname) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, txtStudentId.getText());
+            pstmt.setString(2, txtFirstName.getText());
+            pstmt.setString(3, txtLastName.getText());
+            pstmt.setString(4, txtGender.getText());
+            pstmt.setString(5, txtDOB.getText());
+            pstmt.setString(6, txtCity.getText());
+            pstmt.setString(7, txtPhone.getText());
+            pstmt.setString(8, txtClass.getText());
+            pstmt.setString(9, txtMentorId.getText());
+            pstmt.setString(10, txtCourseId.getText());
+            pstmt.setString(11, txtDepartment.getText());
+            pstmt.setString(12, txtClubName.getText());
+            pstmt.executeUpdate();
+            JOptionPane.showMessageDialog(frame, "Student record inserted successfully");
+            clearFields();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(frame, "Insert operation failed: " + e.getMessage());
+        }
+    }
+
+    // Method to delete a student record
+    private void deleteStudent() {
+        try {
+            String sql = "DELETE FROM student WHERE s_id = ?";
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            pstmt.setString(1, txtStudentId.getText());
+            pstmt.executeUpdate();
+            JOptionPane.showMessageDialog(frame, "Student record deleted successfully");
+            clearFields();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(frame, "Delete operation failed: " + e.getMessage());
+        }
+    }
+
+    // Method to search for a student record based on various criteria
+    // Method to search for a student record based on various criteria
+private void searchStudent() {
+  try {
+      StringBuilder sql = new StringBuilder("SELECT * FROM student WHERE 1=1");
+      boolean hasCriteria = false;
+
+      if (!txtStudentId.getText().isEmpty()) {
+          sql.append(" AND s_id = ?");
+          hasCriteria = true;
+      }
+      if (!txtFirstName.getText().isEmpty()) {
+          sql.append(" AND fname LIKE ?");
+          hasCriteria = true;
+      }
+      if (!txtLastName.getText().isEmpty()) {
+          sql.append(" AND lname LIKE ?");
+          hasCriteria = true;
+      }
+      if (!txtCity.getText().isEmpty()) {
+          sql.append(" AND city LIKE ?");
+          hasCriteria = true;
+      }
+      if (!txtGender.getText().isEmpty()) {
+        sql.append(" AND gender = ?");
+        hasCriteria = true;
+    }
+      if (!txtMentorId.getText().isEmpty()) {
+          sql.append(" AND mentor_id = ?");
+          hasCriteria = true;
+      }
+      if (!txtCourseId.getText().isEmpty()) {
+          sql.append(" AND csid = ?");
+          hasCriteria = true;
+      }
+      if (!txtDepartment.getText().isEmpty()) {
+          sql.append(" AND Dno = ?");
+          hasCriteria = true;
+      }
+      if (!txtClubName.getText().isEmpty()) {
+          sql.append(" AND clname LIKE ?");
+          hasCriteria = true;
+      }
+
+      // If no criteria were specified, inform the user
+      if (!hasCriteria) {
+          JOptionPane.showMessageDialog(frame, "Please fill at least one search field.");
+          return;
+      }
+
+      PreparedStatement pstmt = con.prepareStatement(sql.toString());
+      int index = 1;
+
+      // Set parameters based on user input
+      if (!txtStudentId.getText().isEmpty()) {
+          pstmt.setString(index++, txtStudentId.getText());
+      }
+      if (!txtFirstName.getText().isEmpty()) {
+          pstmt.setString(index++, "%" + txtFirstName.getText() + "%"); // Wildcard for partial match
+      }
+      if (!txtLastName.getText().isEmpty()) {
+          pstmt.setString(index++, "%" + txtLastName.getText() + "%"); // Wildcard for partial match
+      }
+      if (!txtCity.getText().isEmpty()) {
+          pstmt.setString(index++, "%" + txtCity.getText() + "%"); // Wildcard for partial match
+      }
+      if (!txtMentorId.getText().isEmpty()) {
+          pstmt.setString(index++, txtMentorId.getText());
+      }
+      if (!txtCourseId.getText().isEmpty()) {
+          pstmt.setString(index++, txtCourseId.getText());
+      }
+      if (!txtDepartment.getText().isEmpty()) {
+          pstmt.setString(index++, txtDepartment.getText());
+      }
+      if (!txtClubName.getText().isEmpty()) {
+          pstmt.setString(index++, "%" + txtClubName.getText() + "%"); // Wildcard for partial match
+      }
+
+      ResultSet rs = pstmt.executeQuery();
+      tableModel.setRowCount(0); // Clear previous results
+
+      // Populate the table with search results
+      while (rs.next()) {
+          Object[] row = new Object[]{
+              rs.getString("s_id"),
+              rs.getString("fname"),
+              rs.getString("lname"),
+              rs.getString("gender"),
+              rs.getString("dob"),
+              rs.getString("city"),
+              rs.getString("s_phone"),
+              rs.getString("class"),
+              rs.getString("mentor_id"),
+              rs.getString("csid"),
+              rs.getString("Dno"),
+              rs.getString("clname")
+          };
+          tableModel.addRow(row);
+      }
+
+      if (tableModel.getRowCount() == 0) {
+          JOptionPane.showMessageDialog(frame, "No students found matching the criteria.");
+      }
+  } catch (SQLException e) {
+      e.printStackTrace();
+      JOptionPane.showMessageDialog(frame, "Search operation failed: " + e.getMessage());
+  }
+}
+
+    // Method to display all students
+    private void displayStudents() {
+        try {
+            String sql = "SELECT * FROM student";
+            PreparedStatement pstmt = con.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            tableModel.setRowCount(0); // Clear previous results
+            while (rs.next()) {
+                Object[] row = new Object[]{
+                    rs.getString("s_id"),
+                    rs.getString("fname"),
+                    rs.getString("lname"),
+                    rs.getString("gender"),
+                    rs.getString("dob"),
+                    rs.getString("city"),
+                    rs.getString("s_phone"),
+                    rs.getString("class"),
+                    rs.getString("mentor_id"),
+                    rs.getString("csid"),
+                    rs.getString("Dno"),
+                    rs.getString("clname")
+                };
+                tableModel.addRow(row);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(frame, "Display operation failed: " + e.getMessage());
+        }
+    }
+
+    // Method to clear input fields
+    private void clearFields() {
+        txtStudentId.setText("");
+        txtFirstName.setText("");
+        txtLastName.setText("");
+        txtGender.setText("");
+        txtDOB.setText("");
+        txtCity.setText("");
+        txtPhone.setText("");
+        txtClass.setText("");
+        txtMentorId.setText("");
+        txtCourseId.setText("");
+        txtDepartment.setText("");
+        txtClubName.setText("");
+    }
+
+    // Main method
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new CollegeManagementSystem());
+    }
+}
